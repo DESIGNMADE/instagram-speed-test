@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+
+<script>
+window.DM = {
+  timeOrigin: performance.timeOrigin,
+  scriptStart: performance.now(),
+  readyStateAtStart: document.readyState,
+  events: []
+};
+
+["pageshow","visibilitychange"].forEach(function(type) {
+  addEventListener(type, function() {
+    DM.events.push({
+      type: type,
+      t: performance.now(),
+      visibility: document.visibilityState
+    });
+  });
+});
+</script>
+
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<style>
+html,body {
+  margin:0;
+  padding:0;
+  background:#ff2d95;
+  color:#000;
+  font-family:Arial,sans-serif;
+}
+main { padding:24px; }
+h1 { margin:0 0 20px; font-size:32px; }
+#counter { font-size:34px; font-weight:bold; margin-bottom:30px; }
+#diag {
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  background:#fff;
+  padding:16px;
+  font-size:13px;
+  line-height:1.45;
+}
+</style>
+</head>
+
+<body>
+<main>
+<h1>EXTERNAL MATCHED CONTROL</h1>
+<div id="counter">t = ... ms</div>
+<pre id="diag">Diagnostic running...</pre>
+</main>
+
+<script>
+(function () {
+  const counter = document.getElementById("counter");
+  const diag = document.getElementById("diag");
+
+  function frame() {
+    counter.textContent = "t = " + Math.round(performance.now()) + " ms";
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  setTimeout(function () {
+    const nav = performance.getEntriesByType("navigation")[0] || {};
+    const paints = performance.getEntriesByType("paint").map(function(p) {
+      return {name:p.name,t:Math.round(p.startTime)};
+    });
+
+    const resources = performance.getEntriesByType("resource").map(function(r) {
+      return {
+        name:r.name,
+        initiatorType:r.initiatorType,
+        duration:Math.round(r.duration),
+        transferSize:r.transferSize
+      };
+    });
+
+    diag.textContent = JSON.stringify({
+      timeOrigin:new Date(DM.timeOrigin).toISOString(),
+      scriptStart:Math.round(DM.scriptStart),
+      readyStateAtStart:DM.readyStateAtStart,
+      navigation:{
+        type:nav.type,
+        redirectCount:nav.redirectCount,
+        fetchStart:Math.round(nav.fetchStart || 0),
+        domainLookupStart:Math.round(nav.domainLookupStart || 0),
+        domainLookupEnd:Math.round(nav.domainLookupEnd || 0),
+        connectStart:Math.round(nav.connectStart || 0),
+        secureConnectionStart:Math.round(nav.secureConnectionStart || 0),
+        connectEnd:Math.round(nav.connectEnd || 0),
+        requestStart:Math.round(nav.requestStart || 0),
+        responseStart:Math.round(nav.responseStart || 0),
+        responseEnd:Math.round(nav.responseEnd || 0),
+        domInteractive:Math.round(nav.domInteractive || 0),
+        domContentLoadedEventEnd:Math.round(nav.domContentLoadedEventEnd || 0),
+        loadEventEnd:Math.round(nav.loadEventEnd || 0)
+      },
+      paint:paints,
+      events:DM.events,
+      resources:resources
+    }, null, 2);
+  }, 3000);
+})();
+</script>
+
+<!-- MATCHED_PAYLOAD_START
+8f3a91c7e25b4d10a6c2f87419be530d
+17c4ea903b6d82f51a7e3094c68bd215
+a9205f7c13e648bd0f297ca581e43672
+6d18b3f942a75ec10c84f6319e2ab507
+3be701d84c296fa5127d9e43860acb15
+c8154e092f7a36bd19e540c28ab763f1
+72a4d915e30c86f27b1954ea608dc3b7
+e4912a76c5083fd190b724e86a35dc41
+1f73c9a582e406bd37a15c84920ef671
+95d2e6814b70ca39f128e6537ad904bc
+4a81c0e937d265fb18a504c69be713d2
+d60f4291a83c57be904e216c75ab38f0
+2c97a541e6083bdf19c425ea70f861d3
+b3158d7094ce62fa17e350c829ad641b
+MATCHED_PAYLOAD_END -->
+
+</body>
+</html>
