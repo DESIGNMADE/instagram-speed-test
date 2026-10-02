@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+
+<script>
+window.DM = {
+  timeOrigin: performance.timeOrigin,
+  scriptStart: performance.now(),
+  readyStateAtStart: document.readyState,
+  events: []
+};
+
+["pageshow","visibilitychange"].forEach(function(type) {
+  addEventListener(type, function() {
+    DM.events.push({
+      type: type,
+      t: performance.now(),
+      visibility: document.visibilityState
+    });
+  });
+});
+</script>
+
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<style>
+html,body {
+  margin:0;
+  padding:0;
+  background:#ff2d95;
+  color:#000;
+  font-family:Arial,sans-serif;
+}
+
+main {
+  padding:24px;
+}
+
+h1 {
+  margin:0 0 20px;
+  font-size:32px;
+}
+
+#counter {
+  font-size:34px;
+  font-weight:bold;
+  margin-bottom:30px;
+}
+
+#diag {
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  background:#fff;
+  padding:16px;
+  font-size:13px;
+  line-height:1.45;
+}
+</style>
+</head>
+
+<body>
+<main>
+<h1>EXTERNAL CONTROL</h1>
+<div id="counter">t = ... ms</div>
+<pre id="diag">Diagnostic running...</pre>
+</main>
+
+<script>
+(function () {
+  const counter = document.getElementById("counter");
+  const diag = document.getElementById("diag");
+
+  function frame() {
+    counter.textContent = "t = " + Math.round(performance.now()) + " ms";
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  setTimeout(function () {
+    const nav = performance.getEntriesByType("navigation")[0] || {};
+    const paints = performance.getEntriesByType("paint").map(function(p) {
+      return {
+        name: p.name,
+        t: Math.round(p.startTime)
+      };
+    });
+
+    const output = {
+      timeOrigin: new Date(DM.timeOrigin).toISOString(),
+      scriptStart: Math.round(DM.scriptStart),
+      readyStateAtStart: DM.readyStateAtStart,
+
+      navigation: {
+        type: nav.type,
+        redirectCount: nav.redirectCount,
+        fetchStart: Math.round(nav.fetchStart || 0),
+        domainLookupStart: Math.round(nav.domainLookupStart || 0),
+        domainLookupEnd: Math.round(nav.domainLookupEnd || 0),
+        connectStart: Math.round(nav.connectStart || 0),
+        secureConnectionStart: Math.round(nav.secureConnectionStart || 0),
+        connectEnd: Math.round(nav.connectEnd || 0),
+        requestStart: Math.round(nav.requestStart || 0),
+        responseStart: Math.round(nav.responseStart || 0),
+        responseEnd: Math.round(nav.responseEnd || 0),
+        domInteractive: Math.round(nav.domInteractive || 0),
+        domContentLoadedEventEnd:
+          Math.round(nav.domContentLoadedEventEnd || 0),
+        loadEventEnd: Math.round(nav.loadEventEnd || 0)
+      },
+
+      paint: paints,
+      events: DM.events,
+
+      resources:
+        performance.getEntriesByType("resource").length
+    };
+
+    diag.textContent = JSON.stringify(output, null, 2);
+  }, 3000);
+})();
+</script>
+</body>
+</html>
